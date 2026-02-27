@@ -47,7 +47,10 @@ function renderBoard() {
       sq.dataset.col = c;
 
       const piece = board[r][c];
-      if (piece) sq.textContent = PIECES[piece];
+      if (piece) {
+        sq.textContent = PIECES[piece];
+        sq.style.color = piece[0] === 'w' ? '#ffffff' : '#000000';
+      }
 
       sq.onclick = () => onSquareClick(r, c);
       boardEl.appendChild(sq);
@@ -131,7 +134,6 @@ function getAllLegalMoves(color) {
   return moves;
 }
 
-// einfache Zugregeln (keine Schachprüfung)
 function isLegalMove(fr, fc, tr, tc, piece) {
   if (!piece) return false;
   const color = piece[0];
