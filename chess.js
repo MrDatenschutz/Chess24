@@ -477,23 +477,70 @@ function king(fr, fc, tr, tc, color) {
     return true;
   }
 
-  // Rochade nur wenn König nicht im Schach
-  if (isInCheck(color)) return false;
+// Rochade nur wenn König nicht im Schach
+if (isInCheck(color)) return false;
 
-  const homeRank = (color === 'w') ? 7 : 0;
+const homeRank = (color === 'w') ? 7 : 0;
+const enemy = (color === 'w') ? 'b' : 'w';
 
-  if (fr === homeRank && fc === 4 && tr === homeRank) {
+// König steht auf Startfeld?
+if (fr === homeRank && fc === 4 && tr === homeRank) {
 
-    // kurze Rochade
+    // -----------------------------
+    // KURZE ROCHADE (König nach g1/g8)
+    // -----------------------------
     if (tc === 6) {
-      if (color === 'w' && moved.wK) return false;
-      if (color === 'b' && moved.bK) return false;
 
-      if (color === 'w' && moved.wR7) return false;
-      if (color === 'b' && moved.bR7) return false;
+        // König oder Turm schon bewegt?
+        if (color === 'w' && moved.wK) return false;
+        if (color === 'b' && moved.bK) return false;
 
-      if (board[homeRank][7] !== color + 'R') return false;
+        if (color === 'w' && moved.wR7) return false;
+        if (color === 'b' && moved.bR7) return false;
 
-      if (!board[homeRank][5] && !board[homeRank][6] &&
-          !isSquareAttacked(homeRank, 4, enemy) &&
-          !isSquareAttacked(homeRank, 5
+        // Turm vorhanden?
+        if (board[homeRank][7] !== color + 'R') return false;
+
+        // Felder müssen frei sein
+        if (board[homeRank][5] !== null) return false;
+        if (board[homeRank][6] !== null) return false;
+
+        // Felder dürfen nicht angegriffen sein
+        if (isSquareAttacked(homeRank, 4, enemy)) return false;
+        if (isSquareAttacked(homeRank, 5, enemy)) return false;
+        if (isSquareAttacked(homeRank, 6, enemy)) return false;
+
+        return true;
+    }
+
+    // -----------------------------
+    // LANGE ROCHADE (König nach c1/c8)
+    // -----------------------------
+    if (tc === 2) {
+
+        // König oder Turm schon bewegt?
+        if (color === 'w' && moved.wK) return false;
+        if (color === 'b' && moved.bK) return false;
+
+        if (color === 'w' && moved.wR0) return false;
+        if (color === 'b' && moved.bR0) return false;
+
+        // Turm vorhanden?
+        if (board[homeRank][0] !== color + 'R') return false;
+
+        // Felder müssen frei sein
+        if (board[homeRank][1] !== null) return false;
+        if (board[homeRank][2] !== null) return false;
+        if (board[homeRank][3] !== null) return false;
+
+        // Felder dürfen nicht angegriffen sein
+        if (isSquareAttacked(homeRank, 4, enemy)) return false;
+        if (isSquareAttacked(homeRank, 3, enemy)) return false;
+        if (isSquareAttacked(homeRank, 2, enemy)) return false;
+
+        return true;
+    }
+}
+
+// Wenn keine Rochade → normaler Königszug
+return false;
