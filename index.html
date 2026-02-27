@@ -71,9 +71,8 @@
       user-select: none;
     }
 
-    /* Brettfarben */
-    .light { background: #ffeb3b; }   /* Gelb */
-    .dark  { background: #1565c0; }   /* Blau */
+    .light { background: #ffeb3b; }
+    .dark  { background: #1565c0; }
 
     .selected {
       outline: 3px solid #58a6ff;
@@ -88,6 +87,23 @@
       margin-top: 1rem;
       font-size: 1.2rem;
     }
+
+    #promotionBox {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #161b22;
+      padding: 20px;
+      border: 2px solid #30363d;
+      display: none;
+    }
+
+    #promotionBox button {
+      font-size: 30px;
+      margin: 10px;
+    }
+
   </style>
 </head>
 
@@ -111,6 +127,14 @@
 
   <div id="board"></div>
   <div id="status"></div>
+
+  <div id="promotionBox">
+    <p>Wähle eine Figur:</p>
+    <button onclick="promote('Q')">♕</button>
+    <button onclick="promote('R')">♖</button>
+    <button onclick="promote('B')">♗</button>
+    <button onclick="promote('N')">♘</button>
+  </div>
 
   <script src="chess.js"></script>
 </body>
