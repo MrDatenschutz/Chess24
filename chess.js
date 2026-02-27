@@ -20,6 +20,16 @@ let timerInterval = null;
 
 let promotionCallback = null;
 
+// Rochade-Flags
+let moved = {
+  wK: false,
+  bK: false,
+  wR0: false,
+  wR7: false,
+  bR0: false,
+  bR7: false
+};
+
 const PIECES = {
   'wP': '♙','wR': '♖','wN': '♘','wB': '♗','wQ': '♕','wK': '♔',
   'bP': '♟','bR': '♜','bN': '♞','bB': '♝','bQ': '♛','bK': '♚'
@@ -44,6 +54,8 @@ function startGame(color) {
 
   playerScoreEl.textContent = "0";
   botScoreEl.textContent = "0";
+
+  moved = { wK:false, bK:false, wR0:false, wR7:false, bR0:false, bR7:false };
 
   initBoard();
   renderBoard();
@@ -154,6 +166,18 @@ function makeMove(fr, fc, tr, tc, isPlayer) {
   const target = board[tr][tc];
 
   if (target) updateScore(piece[0], target);
+
+  if (piece[1] === 'K') {
+    if (piece[0] === 'w') moved.wK = true;
+    else moved.bK = true;
+  }
+
+  if (piece[1] === 'R') {
+    if (piece[0] === 'w' && fr === 7 && fc === 0) moved.wR0 = true;
+    if (piece[0] === 'w' && fr === 7 && fc === 7) moved.wR7 = true;
+    if (piece[0] === 'b' && fr === 0 && fc === 0) moved.bR0 = true;
+    if (piece[0] === 'b' && fr === 0 && fc === 7) moved.bR7 = true;
+  }
 
   if (piece[1] === 'K' && Math.abs(tc - fc) === 2) {
     if (tc === fc + 2) {
@@ -394,22 +418,36 @@ function king(fr, fc, tr, tc, color) {
   if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) return true;
 
   const homeRank = (color === 'w') ? 7 : 0;
+  const enemy = color === 'w' ? 'b' : 'w';
+
   if (fr === homeRank && fc === 4 && tr === homeRank) {
+
     if (tc === 6) {
+      if (color === 'w' && moved.wK) return false;
+      if (color === 'b' && moved.bK) return false;
+
+      if (color === 'w' && moved.wR7) return false;
+      if (color === 'b' && moved.bR7) return false;
+
       if (!board[homeRank][5] && !board[homeRank][6] &&
-          board[homeRank][7] === color + 'R' &&
-          !isSquareAttacked(homeRank, 4, color === 'w' ? 'b' : 'w') &&
-          !isSquareAttacked(homeRank, 5, color === 'w' ? 'b' : 'w') &&
-          !isSquareAttacked(homeRank, 6, color === 'w' ? 'b' : 'w')) {
+          !isSquareAttacked(homeRank, 4, enemy) &&
+          !isSquareAttacked(homeRank, 5, enemy) &&
+          !isSquareAttacked(homeRank, 6, enemy)) {
         return true;
       }
     }
+
     if (tc === 2) {
+      if (color === 'w' && moved.wK) return false;
+      if (color === 'b' && moved.bK) return false;
+
+      if (color === 'w' && moved.wR0) return false;
+      if (color === 'b' && moved.bR0) return false;
+
       if (!board[homeRank][1] && !board[homeRank][2] && !board[homeRank][3] &&
-          board[homeRank][0] === color + 'R' &&
-          !isSquareAttacked(homeRank, 4, color === 'w' ? 'b' : 'w') &&
-          !isSquareAttacked(homeRank, 3, color === 'w' ? 'b' : 'w') &&
-          !isSquareAttacked(homeRank, 2, color === 'w' ? 'b' : 'w')) {
+          !isSquareAttacked(homeRank, 4, enemy) &&
+          !isSquareAttacked(homeRank, 3, enemy) &&
+          !isSquareAttacked(homeRank, 2, enemy)) {
         return true;
       }
     }
