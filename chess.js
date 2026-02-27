@@ -144,7 +144,6 @@ function renderBoard() {
 }
 
 function updateStatus() {
-
   if (isCheckmate(currentTurn)) {
     statusEl.textContent = (currentTurn === 'w' ? "Weiß" : "Schwarz") + " ist schachmatt!";
     return;
@@ -448,7 +447,6 @@ function king(fr, fc, tr, tc, color) {
 
   if (fr === homeRank && fc === 4 && tr === homeRank) {
 
-    // kurze Rochade
     if (tc === 6) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
@@ -468,7 +466,6 @@ function king(fr, fc, tr, tc, color) {
       return true;
     }
 
-    // lange Rochade
     if (tc === 2) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
