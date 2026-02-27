@@ -19,6 +19,15 @@
       margin-bottom: 1rem;
     }
 
+    #leftPanel {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      color: #e6edf3;
+      font-size: 1.2rem;
+      line-height: 1.8rem;
+    }
+
     #colorSelect {
       margin-bottom: 1.5rem;
       text-align: center;
@@ -62,13 +71,17 @@
       user-select: none;
     }
 
-    /* neues Farbschema */
+    /* Brettfarben */
     .light { background: #ffeb3b; }   /* Gelb */
     .dark  { background: #1565c0; }   /* Blau */
 
     .selected {
       outline: 3px solid #58a6ff;
       box-sizing: border-box;
+    }
+
+    .highlight {
+      box-shadow: inset 0 0 0 4px #2ea043;
     }
 
     #status {
@@ -79,6 +92,14 @@
 </head>
 
 <body>
+
+  <div id="leftPanel">
+    <div><b>Deine Zeit:</b> <span id="playerTime">5:00</span></div>
+    <div><b>Bot Zeit:</b> <span id="botTime">5:00</span></div>
+    <br>
+    <div><b>Dein Score:</b> <span id="playerScore">0</span></div>
+    <div><b>Bot Score:</b> <span id="botScore">0</span></div>
+  </div>
 
   <h1>WebChess Bot</h1>
 
