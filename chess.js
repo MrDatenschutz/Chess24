@@ -77,7 +77,7 @@ function onSquareClick(r, c) {
       currentTurn = botColor;
       renderBoard();
       updateStatus();
-      setTimeout(botMove, 300);
+      setTimeout(botMove, 200);
     } else {
       selectedSquare = null;
       renderBoard();
