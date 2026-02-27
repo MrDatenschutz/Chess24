@@ -1,13 +1,3 @@
-/********************************************************************************************
- *  WebChess – Vollständige Engine mit:
- *  ✔ korrekter Rochade
- *  ✔ korrekter Bauernumwandlung
- *  ✔ Schachprüfung
- *  ✔ Bot, der nur legale Züge macht
- *  ✔ König kann nicht geschlagen werden
- *  ✔ Bot ignoriert Schach nicht mehr
- ********************************************************************************************/
-
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 
@@ -30,7 +20,6 @@ let timerInterval = null;
 
 let promotionCallback = null;
 
-// Rochade-Flags
 let moved = {
   wK: false,
   bK: false,
@@ -47,9 +36,6 @@ const PIECES = {
 
 const SCORES = { P:1, N:3, B:3, R:5, Q:9 };
 
-/********************************************************************************************
- *  SPIELSTART
- ********************************************************************************************/
 function startGame(color) {
   playerColor = color;
   botColor = color === 'w' ? 'b' : 'w';
@@ -77,9 +63,6 @@ function startGame(color) {
   if (playerColor === 'b') botMove();
 }
 
-/********************************************************************************************
- *  TIMER
- ********************************************************************************************/
 function updateClock() {
   if (currentTurn === playerColor) {
     if (playerTime > 0) playerTime--;
@@ -100,9 +83,6 @@ function formatTime(t) {
   return `${m}:${s.toString().padStart(2,'0')}`;
 }
 
-/********************************************************************************************
- *  BRETT INITIALISIEREN
- ********************************************************************************************/
 function initBoard() {
   board = [
     ['bR','bN','bB','bQ','bK','bB','bN','bR'],
@@ -116,15 +96,11 @@ function initBoard() {
   ];
 }
 
-/********************************************************************************************
- *  BRETT RENDERN
- ********************************************************************************************/
 function renderBoard() {
   boardEl.innerHTML = '';
 
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
-
       const sq = document.createElement('div');
       sq.classList.add('square');
       sq.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
@@ -151,9 +127,6 @@ function renderBoard() {
   }
 }
 
-/********************************************************************************************
- *  STATUS
- ********************************************************************************************/
 function updateStatus() {
   if (isInCheck(currentTurn)) {
     statusEl.textContent = (currentTurn === 'w' ? "Weiß" : "Schwarz") + " steht im Schach!";
@@ -162,9 +135,6 @@ function updateStatus() {
   }
 }
 
-/********************************************************************************************
- *  FIGUR ANKLICKEN
- ********************************************************************************************/
 function onSquareClick(r, c) {
   if (currentTurn !== playerColor) return;
 
@@ -190,16 +160,12 @@ function onSquareClick(r, c) {
   }
 }
 
-/********************************************************************************************
- *  ZUG AUSFÜHREN
- ********************************************************************************************/
 function makeMove(fr, fc, tr, tc, isPlayer) {
   const piece = board[fr][fc];
   const target = board[tr][tc];
 
   if (target) updateScore(piece[0], target);
 
-  // Rochade-Flags setzen
   if (piece === 'wK') moved.wK = true;
   if (piece === 'bK') moved.bK = true;
   if (piece === 'wR' && fr === 7 && fc === 0) moved.wR0 = true;
@@ -207,7 +173,6 @@ function makeMove(fr, fc, tr, tc, isPlayer) {
   if (piece === 'bR' && fr === 0 && fc === 0) moved.bR0 = true;
   if (piece === 'bR' && fr === 0 && fc === 7) moved.bR7 = true;
 
-  // Rochade ausführen
   if (piece[1] === 'K' && Math.abs(tc - fc) === 2) {
     if (tc === fc + 2) {
       board[fr][fc + 1] = board[fr][7];
@@ -221,7 +186,6 @@ function makeMove(fr, fc, tr, tc, isPlayer) {
   board[tr][tc] = piece;
   board[fr][fc] = null;
 
-  // Bauernumwandlung
   if (piece[1] === 'P') {
     if ((piece[0] === 'w' && tr === 0) || (piece[0] === 'b' && tr === 7)) {
       if (isPlayer) {
@@ -246,9 +210,6 @@ function makeMove(fr, fc, tr, tc, isPlayer) {
   if (isPlayer) setTimeout(botMove, 200);
 }
 
-/********************************************************************************************
- *  BAUERNUMWANDLUNG
- ********************************************************************************************/
 function showPromotionBox(color, r, c) {
   const box = document.getElementById('promotionBox');
   box.style.display = 'block';
@@ -269,9 +230,6 @@ function promote(type) {
   if (promotionCallback) promotionCallback(type);
 }
 
-/********************************************************************************************
- *  SCORE
- ********************************************************************************************/
 function updateScore(color, captured) {
   const val = SCORES[captured[1]] || 0;
   if (color === playerColor) {
@@ -281,9 +239,6 @@ function updateScore(color, captured) {
   }
 }
 
-/********************************************************************************************
- *  BOT
- ********************************************************************************************/
 function botMove() {
   const moves = getAllLegalMoves(botColor);
   if (moves.length === 0) return;
@@ -294,9 +249,6 @@ function botMove() {
   makeMove(fr, fc, tr, tc, false);
 }
 
-/********************************************************************************************
- *  LEGAL MOVES
- ********************************************************************************************/
 function getLegalMovesForPiece(r, c) {
   const piece = board[r][c];
   if (!piece) return [];
@@ -305,7 +257,6 @@ function getLegalMovesForPiece(r, c) {
   for (let rr = 0; rr < 8; rr++) {
     for (let cc = 0; cc < 8; cc++) {
       if (isLegalMove(r, c, rr, cc, piece)) {
-
         const backupBoard = JSON.parse(JSON.stringify(board));
         const backupMoved = JSON.parse(JSON.stringify(moved));
 
@@ -337,10 +288,6 @@ function getAllLegalMoves(color) {
   }
   return moves;
 }
-
-/********************************************************************************************
- *  SCHACHPRÜFUNG
- ********************************************************************************************/
 function isInCheck(color) {
   let kingPos = null;
 
@@ -376,9 +323,6 @@ function isSquareAttacked(r, c, byColor) {
   return false;
 }
 
-/********************************************************************************************
- *  ANGRIFFSLOGIK
- ********************************************************************************************/
 function canAttack(fr, fc, tr, tc, piece) {
   const color = piece[0];
   const type = piece[1];
@@ -386,26 +330,19 @@ function canAttack(fr, fc, tr, tc, piece) {
   const dc = tc - fc;
 
   switch (type) {
-    case 'P':
+    case 'P': {
       const dir = color === 'w' ? -1 : 1;
       return (dr === dir && Math.abs(dc) === 1);
-    case 'R':
-      return rook(fr, fc, tr, tc);
-    case 'B':
-      return bishop(fr, fc, tr, tc);
-    case 'Q':
-      return queen(fr, fc, tr, tc);
-    case 'N':
-      return knight(dr, dc);
-    case 'K':
-      return Math.max(Math.abs(dr), Math.abs(dc)) === 1;
+    }
+    case 'R': return rook(fr, fc, tr, tc);
+    case 'B': return bishop(fr, fc, tr, tc);
+    case 'Q': return queen(fr, fc, tr, tc);
+    case 'N': return knight(dr, dc);
+    case 'K': return Math.max(Math.abs(dr), Math.abs(dc)) === 1;
   }
   return false;
 }
 
-/********************************************************************************************
- *  ZUGREGELN
- ********************************************************************************************/
 function isLegalMove(fr, fc, tr, tc, piece) {
   if (fr === tr && fc === tc) return false;
   if (!piece) return false;
@@ -472,75 +409,68 @@ function knight(dr, dc) {
 function king(fr, fc, tr, tc, color) {
   const enemy = color === 'w' ? 'b' : 'w';
 
-  // normaler Königszug
   if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) {
     return true;
   }
 
-// Rochade nur wenn König nicht im Schach
-if (isInCheck(color)) return false;
+  if (isInCheck(color)) return false;
 
-const homeRank = (color === 'w') ? 7 : 0;
-const enemy = (color === 'w') ? 'b' : 'w';
+  const homeRank = (color === 'w') ? 7 : 0;
 
-// König steht auf Startfeld?
-if (fr === homeRank && fc === 4 && tr === homeRank) {
+  if (fr === homeRank && fc === 4 && tr === homeRank) {
 
-    // -----------------------------
-    // KURZE ROCHADE (König nach g1/g8)
-    // -----------------------------
     if (tc === 6) {
+      if (color === 'w' && moved.wK) return false;
+      if (color === 'b' && moved.bK) return false;
 
-        // König oder Turm schon bewegt?
-        if (color === 'w' && moved.wK) return false;
-        if (color === 'b' && moved.bK) return false;
+      if (color === 'w' && moved.wR7) return false;
+      if (color === 'b' && moved.bR7) return false;
 
-        if (color === 'w' && moved.wR7) return false;
-        if (color === 'b' && moved.bR7) return false;
+      if (board[homeRank][7] !== color + 'R') return false;
 
-        // Turm vorhanden?
-        if (board[homeRank][7] !== color + 'R') return false;
+      if (board[homeRank][5] !== null) return false;
+      if (board[homeRank][6] !== null) return false;
 
-        // Felder müssen frei sein
-        if (board[homeRank][5] !== null) return false;
-        if (board[homeRank][6] !== null) return false;
+      if (isSquareAttacked(homeRank, 4, enemy)) return false;
+      if (isSquareAttacked(homeRank, 5, enemy)) return false;
+      if (isSquareAttacked(homeRank, 6, enemy)) return false;
 
-        // Felder dürfen nicht angegriffen sein
-        if (isSquareAttacked(homeRank, 4, enemy)) return false;
-        if (isSquareAttacked(homeRank, 5, enemy)) return false;
-        if (isSquareAttacked(homeRank, 6, enemy)) return false;
-
-        return true;
+      return true;
     }
 
-    // -----------------------------
-    // LANGE ROCHADE (König nach c1/c8)
-    // -----------------------------
     if (tc === 2) {
+      if (color === 'w' && moved.wK) return false;
+      if (color === 'b' && moved.bK) return false;
 
-        // König oder Turm schon bewegt?
-        if (color === 'w' && moved.wK) return false;
-        if (color === 'b' && moved.bK) return false;
+      if (color === 'w' && moved.wR0) return false;
+      if (color === 'b' && moved.bR0) return false;
 
-        if (color === 'w' && moved.wR0) return false;
-        if (color === 'b' && moved.bR0) return false;
+      if (board[homeRank][0] !== color + 'R') return false;
 
-        // Turm vorhanden?
-        if (board[homeRank][0] !== color + 'R') return false;
+      if (board[homeRank][1] !== null) return false;
+      if (board[homeRank][2] !== null) return false;
+      if (board[homeRank][3] !== null) return false;
 
-        // Felder müssen frei sein
-        if (board[homeRank][1] !== null) return false;
-        if (board[homeRank][2] !== null) return false;
-        if (board[homeRank][3] !== null) return false;
+      if (isSquareAttacked(homeRank, 4, enemy)) return false;
+      if (isSquareAttacked(homeRank, 3, enemy)) return false;
+      if (isSquareAttacked(homeRank, 2, enemy)) return false;
 
-        // Felder dürfen nicht angegriffen sein
-        if (isSquareAttacked(homeRank, 4, enemy)) return false;
-        if (isSquareAttacked(homeRank, 3, enemy)) return false;
-        if (isSquareAttacked(homeRank, 2, enemy)) return false;
-
-        return true;
+      return true;
     }
+  }
+
+  return false;
 }
 
-// Wenn keine Rochade → normaler Königszug
-return false;
+function clear(fr, fc, tr, tc) {
+  const sr = Math.sign(tr - fr);
+  const sc = Math.sign(tc - fc);
+  let r = fr + sr, c = fc + sc;
+
+  while (r !== tr || c !== tc) {
+    if (board[r][c]) return false;
+    r += sr;
+    c += sc;
+  }
+  return true;
+}
