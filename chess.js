@@ -42,6 +42,9 @@ function startGame(color) {
   clearInterval(timerInterval);
   timerInterval = setInterval(updateClock, 1000);
 
+  playerScoreEl.textContent = "0";
+  botScoreEl.textContent = "0";
+
   initBoard();
   renderBoard();
   updateStatus();
@@ -51,9 +54,9 @@ function startGame(color) {
 
 function updateClock() {
   if (currentTurn === playerColor) {
-    playerTime--;
+    if (playerTime > 0) playerTime--;
   } else {
-    botTime--;
+    if (botTime > 0) botTime--;
   }
   updateTimers();
 }
@@ -120,6 +123,7 @@ function updateStatus() {
     statusEl.textContent = currentTurn === playerColor ? "Du bist am Zug" : "Bot denkt...";
   }
 }
+
 function onSquareClick(r, c) {
   if (currentTurn !== playerColor) return;
 
@@ -129,7 +133,7 @@ function onSquareClick(r, c) {
     const [sr, sc] = selectedSquare;
 
     if (legalMoves.some(m => m[0] === r && m[1] === c)) {
-      makeMove(sr, sc, r, c);
+      makeMove(sr, sc, r, c, true);
       return;
     }
 
@@ -145,7 +149,7 @@ function onSquareClick(r, c) {
   }
 }
 
-function makeMove(fr, fc, tr, tc) {
+function makeMove(fr, fc, tr, tc, isPlayer) {
   const piece = board[fr][fc];
   const target = board[tr][tc];
 
@@ -166,19 +170,28 @@ function makeMove(fr, fc, tr, tc) {
 
   if (piece[1] === 'P') {
     if ((piece[0] === 'w' && tr === 0) || (piece[0] === 'b' && tr === 7)) {
-      showPromotionBox(piece[0], tr, tc);
-      return;
+      if (isPlayer) {
+        showPromotionBox(piece[0], tr, tc);
+        selectedSquare = null;
+        legalMoves = [];
+        renderBoard();
+        return;
+      } else {
+        board[tr][tc] = piece[0] + 'Q';
+      }
     }
   }
 
   selectedSquare = null;
   legalMoves = [];
 
-  currentTurn = botColor;
+  currentTurn = isPlayer ? botColor : playerColor;
   renderBoard();
   updateStatus();
 
-  setTimeout(botMove, 200);
+  if (isPlayer) {
+    setTimeout(botMove, 200);
+  }
 }
 
 function showPromotionBox(color, r, c) {
@@ -202,7 +215,7 @@ function promote(type) {
 }
 
 function updateScore(color, captured) {
-  const val = SCORES[captured[1]];
+  const val = SCORES[captured[1]] || 0;
   if (color === playerColor) {
     playerScoreEl.textContent = parseInt(playerScoreEl.textContent) + val;
   } else {
@@ -212,39 +225,12 @@ function updateScore(color, captured) {
 
 function botMove() {
   const moves = getAllLegalMoves(botColor);
+  if (moves.length === 0) return;
 
-  const safeMoves = moves.filter(m => {
-    const [fr, fc, tr, tc] = m;
-    const backup = JSON.parse(JSON.stringify(board));
-    board[tr][tc] = board[fr][fc];
-    board[fr][fc] = null;
-    const safe = !isInCheck(botColor);
-    board = backup;
-    return safe;
-  });
-
-  const finalMoves = safeMoves.length > 0 ? safeMoves : moves;
-
-  if (finalMoves.length === 0) return;
-
-  const move = finalMoves[Math.floor(Math.random() * finalMoves.length)];
+  const move = moves[Math.floor(Math.random() * moves.length)];
   const [fr, fc, tr, tc] = move;
 
-  const target = board[tr][tc];
-  if (target) updateScore(botColor, target);
-
-  board[tr][tc] = board[fr][fc];
-  board[fr][fc] = null;
-
-  if (board[tr][tc][1] === 'P') {
-    if ((botColor === 'w' && tr === 0) || (botColor === 'b' && tr === 7)) {
-      board[tr][tc] = botColor + 'Q';
-    }
-  }
-
-  currentTurn = playerColor;
-  renderBoard();
-  updateStatus();
+  makeMove(fr, fc, tr, tc, false);
 }
 
 function getLegalMovesForPiece(r, c) {
@@ -290,19 +276,66 @@ function isInCheck(color) {
       if (board[r][c] === color + 'K') kingPos = [r, c];
     }
   }
+  if (!kingPos) return false;
 
   const enemy = color === 'w' ? 'b' : 'w';
-  const moves = getAllLegalMoves(enemy);
 
-  return moves.some(m => m[2] === kingPos[0] && m[3] === kingPos[1]);
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = board[r][c];
+      if (piece && piece[0] === enemy) {
+        if (canAttack(r, c, kingPos[0], kingPos[1], piece)) return true;
+      }
+    }
+  }
+  return false;
 }
+
+function isSquareAttacked(r, c, byColor) {
+  for (let rr = 0; rr < 8; rr++) {
+    for (let cc = 0; cc < 8; cc++) {
+      const piece = board[rr][cc];
+      if (piece && piece[0] === byColor) {
+        if (canAttack(rr, cc, r, c, piece)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function canAttack(fr, fc, tr, tc, piece) {
+  const color = piece[0];
+  const type = piece[1];
+  const dr = tr - fr;
+  const dc = tc - fc;
+
+  switch (type) {
+    case 'P':
+      const dir = color === 'w' ? -1 : 1;
+      return (dr === dir && Math.abs(dc) === 1);
+    case 'R':
+      return rook(fr, fc, tr, tc);
+    case 'B':
+      return bishop(fr, fc, tr, tc);
+    case 'Q':
+      return queen(fr, fc, tr, tc);
+    case 'N':
+      return knight(dr, dc);
+    case 'K':
+      return Math.max(Math.abs(dr), Math.abs(dc)) === 1;
+  }
+  return false;
+}
+
 function isLegalMove(fr, fc, tr, tc, piece) {
+  if (fr === tr && fc === tc) return false;
   if (!piece) return false;
   const color = piece[0];
   const type = piece[1];
   const target = board[tr][tc];
 
   if (target && target[0] === color) return false;
+  if (target && target[1] === 'K') return false;
 
   const dr = tr - fr;
   const dc = tc - fc;
@@ -360,12 +393,25 @@ function knight(dr, dc) {
 function king(fr, fc, tr, tc, color) {
   if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) return true;
 
-  if (fr === (color === 'w' ? 7 : 0) && fc === 4) {
-    if (tc === 6 && tr === fr) {
-      if (!board[fr][5] && !board[fr][6]) return true;
+  const homeRank = (color === 'w') ? 7 : 0;
+  if (fr === homeRank && fc === 4 && tr === homeRank) {
+    if (tc === 6) {
+      if (!board[homeRank][5] && !board[homeRank][6] &&
+          board[homeRank][7] === color + 'R' &&
+          !isSquareAttacked(homeRank, 4, color === 'w' ? 'b' : 'w') &&
+          !isSquareAttacked(homeRank, 5, color === 'w' ? 'b' : 'w') &&
+          !isSquareAttacked(homeRank, 6, color === 'w' ? 'b' : 'w')) {
+        return true;
+      }
     }
-    if (tc === 2 && tr === fr) {
-      if (!board[fr][1] && !board[fr][2] && !board[fr][3]) return true;
+    if (tc === 2) {
+      if (!board[homeRank][1] && !board[homeRank][2] && !board[homeRank][3] &&
+          board[homeRank][0] === color + 'R' &&
+          !isSquareAttacked(homeRank, 4, color === 'w' ? 'b' : 'w') &&
+          !isSquareAttacked(homeRank, 3, color === 'w' ? 'b' : 'w') &&
+          !isSquareAttacked(homeRank, 2, color === 'w' ? 'b' : 'w')) {
+        return true;
+      }
     }
   }
 
