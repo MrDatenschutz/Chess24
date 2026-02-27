@@ -1,17 +1,29 @@
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 
+const playerTimeEl = document.getElementById('playerTime');
+const botTimeEl = document.getElementById('botTime');
+const playerScoreEl = document.getElementById('playerScore');
+const botScoreEl = document.getElementById('botScore');
+
 let board = [];
 let selectedSquare = null;
+let legalMoves = [];
 let playerColor = 'w';
 let botColor = 'b';
 let currentTurn = 'w';
 let flipped = false;
 
+let playerTime = 300;
+let botTime = 300;
+let timerInterval = null;
+
 const PIECES = {
   'wP': '♙','wR': '♖','wN': '♘','wB': '♗','wQ': '♕','wK': '♔',
   'bP': '♟','bR': '♜','bN': '♞','bB': '♝','bQ': '♛','bK': '♚'
 };
+
+const SCORES = { P:1, N:3, B:3, R:5, Q:9 };
 
 function startGame(color) {
   playerColor = color;
@@ -21,11 +33,38 @@ function startGame(color) {
   flipped = (playerColor === 'b');
   boardEl.style.transform = flipped ? "rotate(180deg)" : "none";
 
+  playerTime = 300;
+  botTime = 300;
+  updateTimers();
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(updateClock, 1000);
+
   initBoard();
   renderBoard();
   updateStatus();
 
   if (playerColor === 'b') botMove();
+}
+
+function updateClock() {
+  if (currentTurn === playerColor) {
+    playerTime--;
+  } else {
+    botTime--;
+  }
+  updateTimers();
+}
+
+function updateTimers() {
+  playerTimeEl.textContent = formatTime(playerTime);
+  botTimeEl.textContent = formatTime(botTime);
+}
+
+function formatTime(t) {
+  const m = Math.floor(t / 60);
+  const s = t % 60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
 }
 
 function initBoard() {
@@ -62,6 +101,10 @@ function renderBoard() {
         sq.style.color = piece[0] === 'w' ? '#ffffff' : '#000000';
       }
 
+      if (legalMoves.some(m => m[0] === rr && m[1] === cc)) {
+        sq.classList.add('highlight');
+      }
+
       sq.onclick = () => onSquareClick(rr, cc);
       boardEl.appendChild(sq);
     }
@@ -69,7 +112,11 @@ function renderBoard() {
 }
 
 function updateStatus() {
-  statusEl.textContent = currentTurn === playerColor ? "Du bist am Zug" : "Bot denkt...";
+  if (isInCheck(currentTurn)) {
+    statusEl.textContent = (currentTurn === 'w' ? "Weiß" : "Schwarz") + " steht im Schach!";
+  } else {
+    statusEl.textContent = currentTurn === playerColor ? "Du bist am Zug" : "Bot denkt...";
+  }
 }
 
 function onSquareClick(r, c) {
@@ -81,34 +128,49 @@ function onSquareClick(r, c) {
     const [sr, sc] = selectedSquare;
     const movingPiece = board[sr][sc];
 
-    if (isLegalMove(sr, sc, r, c, movingPiece)) {
-      board[r][c] = movingPiece;
-      board[sr][sc] = null;
-      selectedSquare = null;
-      currentTurn = botColor;
-      renderBoard();
-      updateStatus();
-      setTimeout(botMove, 200);
-    } else {
-      selectedSquare = null;
-      renderBoard();
+    if (legalMoves.some(m => m[0] === r && m[1] === c)) {
+      makeMove(sr, sc, r, c);
+      return;
     }
+
+    selectedSquare = null;
+    legalMoves = [];
+    renderBoard();
   } else {
     if (piece && piece[0] === playerColor) {
       selectedSquare = [r, c];
-      highlight(r, c);
+      legalMoves = getLegalMovesForPiece(r, c);
+      renderBoard();
     }
   }
 }
 
-function highlight(r, c) {
+function makeMove(fr, fc, tr, tc) {
+  const piece = board[fr][fc];
+  const target = board[tr][tc];
+
+  if (target) updateScore(piece[0], target);
+
+  board[tr][tc] = piece;
+  board[fr][fc] = null;
+
+  selectedSquare = null;
+  legalMoves = [];
+
+  currentTurn = botColor;
   renderBoard();
-  const squares = document.querySelectorAll('.square');
-  squares.forEach(s => {
-    if (parseInt(s.dataset.row) === r && parseInt(s.dataset.col) === c) {
-      s.classList.add('selected');
-    }
-  });
+  updateStatus();
+
+  setTimeout(botMove, 200);
+}
+
+function updateScore(color, captured) {
+  const val = SCORES[captured[1]];
+  if (color === playerColor) {
+    playerScoreEl.textContent = parseInt(playerScoreEl.textContent) + val;
+  } else {
+    botScoreEl.textContent = parseInt(botScoreEl.textContent) + val;
+  }
 }
 
 function botMove() {
@@ -118,6 +180,9 @@ function botMove() {
   const move = moves[Math.floor(Math.random() * moves.length)];
   const [fr, fc, tr, tc] = move;
 
+  const target = board[tr][tc];
+  if (target) updateScore(botColor, target);
+
   board[tr][tc] = board[fr][fc];
   board[fr][fc] = null;
 
@@ -126,23 +191,48 @@ function botMove() {
   updateStatus();
 }
 
+function getLegalMovesForPiece(r, c) {
+  const piece = board[r][c];
+  if (!piece) return [];
+  const moves = [];
+
+  for (let rr = 0; rr < 8; rr++) {
+    for (let cc = 0; cc < 8; cc++) {
+      if (isLegalMove(r, c, rr, cc, piece)) {
+        moves.push([rr, cc]);
+      }
+    }
+  }
+  return moves;
+}
+
 function getAllLegalMoves(color) {
   const moves = [];
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const piece = board[r][c];
       if (piece && piece[0] === color) {
-        for (let rr = 0; rr < 8; rr++) {
-          for (let cc = 0; cc < 8; cc++) {
-            if (isLegalMove(r, c, rr, cc, piece)) {
-              moves.push([r, c, rr, cc]);
-            }
-          }
-        }
+        const lm = getLegalMovesForPiece(r, c);
+        lm.forEach(m => moves.push([r, c, m[0], m[1]]));
       }
     }
   }
   return moves;
+}
+
+function isInCheck(color) {
+  let kingPos = null;
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (board[r][c] === color + 'K') kingPos = [r, c];
+    }
+  }
+
+  const enemy = color === 'w' ? 'b' : 'w';
+  const moves = getAllLegalMoves(enemy);
+
+  return moves.some(m => m[2] === kingPos[0] && m[3] === kingPos[1]);
 }
 
 function isLegalMove(fr, fc, tr, tc, piece) {
@@ -162,7 +252,7 @@ function isLegalMove(fr, fc, tr, tc, piece) {
     case 'N': return knight(dr, dc);
     case 'B': return bishop(fr, fc, tr, tc);
     case 'Q': return queen(fr, fc, tr, tc);
-    case 'K': return king(dr, dc);
+    case 'K': return king(fr, fc, tr, tc, color);
   }
   return false;
 }
@@ -206,8 +296,9 @@ function knight(dr, dc) {
          (Math.abs(dr) === 1 && Math.abs(dc) === 2);
 }
 
-function king(dr, dc) {
-  return Math.max(Math.abs(dr), Math.abs(dc)) === 1;
+function king(fr, fc, tr, tc, color) {
+  if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) return true;
+  return false;
 }
 
 function clear(fr, fc, tr, tc) {
