@@ -36,6 +36,23 @@ const PIECES = {
 
 const SCORES = { P:1, N:3, B:3, R:5, Q:9 };
 
+function evaluateBoard(color) {
+  let score = 0;
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = board[r][c];
+      if (!piece) continue;
+
+      const val = SCORES[piece[1]] || 0;
+      if (piece[0] === color) score += val;
+      else score -= val;
+    }
+  }
+
+  return score;
+}
+
 function startGame(color) {
   playerColor = color;
   botColor = color === 'w' ? 'b' : 'w';
@@ -156,7 +173,6 @@ function updateStatus() {
 
   statusEl.textContent = currentTurn === playerColor ? "Du bist am Zug" : "Bot denkt...";
 }
-
 function onSquareClick(r, c) {
   if (currentTurn !== playerColor) return;
 
@@ -265,12 +281,41 @@ function botMove() {
   const moves = getAllLegalMoves(botColor);
   if (moves.length === 0) return;
 
-  const move = moves[Math.floor(Math.random() * moves.length)];
-  const [fr, fc, tr, tc] = move;
+  let bestScore = -9999;
+  let bestMoves = [];
+
+  for (const move of moves) {
+    const [fr, fc, tr, tc] = move;
+
+    const backupBoard = JSON.parse(JSON.stringify(board));
+    const backupMoved = JSON.parse(JSON.stringify(moved));
+
+    const piece = board[fr][fc];
+    const target = board[tr][tc];
+
+    board[tr][tc] = piece;
+    board[fr][fc] = null;
+
+    let score = evaluateBoard(botColor);
+    if (isInCheck(playerColor)) score += 3;
+    if (target) score += SCORES[target[1]] || 0;
+
+    board = backupBoard;
+    moved = backupMoved;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves = [move];
+    } else if (score === bestScore) {
+      bestMoves.push(move);
+    }
+  }
+
+  const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+  const [fr, fc, tr, tc] = chosen;
 
   makeMove(fr, fc, tr, tc, false);
 }
-
 function getLegalMovesForPiece(r, c) {
   const piece = board[r][c];
   if (!piece) return [];
@@ -315,6 +360,7 @@ function isCheckmate(color) {
   if (!isInCheck(color)) return false;
   return getAllLegalMoves(color).length === 0;
 }
+
 function isInCheck(color) {
   let kingPos = null;
 
