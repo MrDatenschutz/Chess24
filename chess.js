@@ -154,7 +154,7 @@ function isInsufficientMaterial() {
       if (p) pieces.push(p);
     }
   }
-  if (pieces.length === 2) return true; // nur Könige
+  if (pieces.length === 2) return true;
   const minors = pieces.filter(p => ['B','N'].includes(p[1]));
   const others = pieces.filter(p => !['K','B','N'].includes(p[1]));
   if (others.length > 0) return false;
@@ -290,110 +290,15 @@ function updateScore(color, captured) {
   }
 }
 
-function evaluateBoard(color) {
-  let score = 0;
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const p = board[r][c];
-      if (!p) continue;
-      const v = SCORES[p[1]] || 0;
-      score += (p[0] === color ? v : -v);
-    }
-  }
-  return score;
-}
-
-// halbprofi Bot: Minimax Tiefe 2
+// DUMMER BOT (Zufallszug)
 function botMove() {
   const moves = getAllLegalMoves(botColor);
   if (moves.length === 0) return;
 
-  let bestScore = -99999;
-  let bestMoves = [];
-
-  for (const move of moves) {
-    const [fr, fc, tr, tc] = move;
-
-    const backupBoard = JSON.parse(JSON.stringify(board));
-    const backupMoved = JSON.parse(JSON.stringify(moved));
-
-    const piece = board[fr][fc];
-    board[tr][tc] = piece;
-    board[fr][fc] = null;
-
-    const score = evaluatePosition(botColor, 2, false);
-
-    board = backupBoard;
-    moved = backupMoved;
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMoves = [move];
-    } else if (score === bestScore) {
-      bestMoves.push(move);
-    }
-  }
-
-  const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-  const [fr, fc, tr, tc] = chosen;
+  const move = moves[Math.floor(Math.random() * moves.length)];
+  const [fr, fc, tr, tc] = move;
 
   makeMove(fr, fc, tr, tc, false);
-}
-
-function evaluatePosition(color, depth, isPlayerTurn) {
-  if (depth === 0) return evaluateBoard(color);
-
-  const turnColor = isPlayerTurn ? playerColor : botColor;
-  const moves = getAllLegalMoves(turnColor);
-
-  if (moves.length === 0) {
-    if (isInCheck(turnColor)) {
-      return turnColor === color ? -9999 : 9999;
-    }
-    return 0; // Patt
-  }
-
-  if (turnColor === color) {
-    let best = -99999;
-    for (const m of moves) {
-      const [fr, fc, tr, tc] = m;
-
-      const backupBoard = JSON.parse(JSON.stringify(board));
-      const backupMoved = JSON.parse(JSON.stringify(moved));
-
-      const piece = board[fr][fc];
-      board[tr][tc] = piece;
-      board[fr][fc] = null;
-
-      const val = evaluatePosition(color, depth - 1, !isPlayerTurn);
-
-      board = backupBoard;
-      moved = backupMoved;
-
-      if (val > best) best = val;
-    }
-    return best;
-  } else {
-    let best = 99999;
-    for (const m of moves) {
-      const [fr, fc, tr, tc] = m;
-
-      const backupBoard = JSON.parse(JSON.stringify(board));
-      const backupMoved = JSON.parse(JSON.stringify(moved));
-
-      const piece = board[fr][fc];
-      board[tr][tc] = piece;
-      board[fr][fc] = null;
-
-      const val = evaluatePosition(color, depth - 1, !isPlayerTurn);
-
-      board = backupBoard;
-      moved = backupMoved;
-
-      if (val < best) best = val;
-    }
-    return best;
-  }
 }
 function getLegalMovesForPiece(r, c) {
   const piece = board[r][c];
@@ -519,11 +424,13 @@ function pawn(fr, fc, tr, tc, color) {
   const start = color === 'w' ? 6 : 1;
   const target = board[tr][tc];
 
+  // normaler Zug
   if (fc === tc && !target) {
     if (tr - fr === dir) return true;
     if (fr === start && tr - fr === 2 * dir && !board[fr + dir][fc]) return true;
   }
 
+  // schlagen
   if (Math.abs(tc - fc) === 1 && tr - fr === dir && target && target[0] !== color) {
     return true;
   }
@@ -556,16 +463,20 @@ function knight(dr, dc) {
 function king(fr, fc, tr, tc, color) {
   const enemy = color === 'w' ? 'b' : 'w';
 
+  // normaler Königszug
   if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) {
     return true;
   }
 
+  // Rochade nur wenn König nicht im Schach
   if (isInCheck(color)) return false;
 
   const homeRank = color === 'w' ? 7 : 0;
 
+  // Rochade
   if (fr === homeRank && fc === 4 && tr === homeRank) {
 
+    // kurze Rochade
     if (tc === 6) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
@@ -585,6 +496,7 @@ function king(fr, fc, tr, tc, color) {
       return true;
     }
 
+    // lange Rochade
     if (tc === 2) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
