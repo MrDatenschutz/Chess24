@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>WebChess Bot</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #58a6ff;
+      margin-bottom: 1rem;
+    }
+
+    #colorSelect {
+      margin-bottom: 1.5rem;
+    }
+
+    button {
+      background: #238636;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: 0.2s;
+      margin: 0.3rem;
+    }
+
+    button:hover {
+      background: #2ea043;
+      box-shadow: 0 0 10px #2ea04388;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 64px);
+      grid-template-rows: repeat(8, 64px);
+      border: 2px solid #30363d;
+      box-shadow: 0 0 15px #000000aa;
+      margin-top: 1rem;
+    }
+
+    .square {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .light { background: #f0d9b5; }
+    .dark { background: #b58863; }
+
+    .selected {
+      outline: 3px solid #58a6ff;
+      box-sizing: border-box;
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>WebChess Bot</h1>
+
+  <div id="colorSelect">
+    <p>Wähle deine Farbe:</p>
+    <button onclick="startGame('w')">Weiß</button>
+    <button onclick="startGame('b')">Schwarz</button>
+  </div>
+
+  <div id="board"></div>
+  <div id="status"></div>
+
+  <script src="chess.js"></script>
+</body>
+</html>
