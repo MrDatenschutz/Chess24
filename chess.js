@@ -99,8 +99,20 @@ function initBoard() {
 function renderBoard() {
   boardEl.innerHTML = '';
 
+  let checkKing = null;
+  if (isInCheck(currentTurn)) {
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        if (board[r][c] === currentTurn + 'K') {
+          checkKing = [r, c];
+        }
+      }
+    }
+  }
+
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
+
       const sq = document.createElement('div');
       sq.classList.add('square');
       sq.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
@@ -121,6 +133,10 @@ function renderBoard() {
         sq.classList.add('highlight');
       }
 
+      if (checkKing && rr === checkKing[0] && cc === checkKing[1]) {
+        sq.classList.add('check-king');
+      }
+
       sq.onclick = () => onSquareClick(rr, cc);
       boardEl.appendChild(sq);
     }
@@ -128,11 +144,18 @@ function renderBoard() {
 }
 
 function updateStatus() {
+
+  if (isCheckmate(currentTurn)) {
+    statusEl.textContent = (currentTurn === 'w' ? "Weiß" : "Schwarz") + " ist schachmatt!";
+    return;
+  }
+
   if (isInCheck(currentTurn)) {
     statusEl.textContent = (currentTurn === 'w' ? "Weiß" : "Schwarz") + " steht im Schach!";
-  } else {
-    statusEl.textContent = currentTurn === playerColor ? "Du bist am Zug" : "Bot denkt...";
+    return;
   }
+
+  statusEl.textContent = currentTurn === playerColor ? "Du bist am Zug" : "Bot denkt...";
 }
 
 function onSquareClick(r, c) {
@@ -288,6 +311,11 @@ function getAllLegalMoves(color) {
   }
   return moves;
 }
+
+function isCheckmate(color) {
+  if (!isInCheck(color)) return false;
+  return getAllLegalMoves(color).length === 0;
+}
 function isInCheck(color) {
   let kingPos = null;
 
@@ -332,7 +360,7 @@ function canAttack(fr, fc, tr, tc, piece) {
   switch (type) {
     case 'P': {
       const dir = color === 'w' ? -1 : 1;
-      return (dr === dir && Math.abs(dc) === 1);
+      return dr === dir && Math.abs(dc) === 1;
     }
     case 'R': return rook(fr, fc, tr, tc);
     case 'B': return bishop(fr, fc, tr, tc);
@@ -346,6 +374,7 @@ function canAttack(fr, fc, tr, tc, piece) {
 function isLegalMove(fr, fc, tr, tc, piece) {
   if (fr === tr && fc === tc) return false;
   if (!piece) return false;
+
   const color = piece[0];
   const type = piece[1];
   const target = board[tr][tc];
@@ -415,10 +444,11 @@ function king(fr, fc, tr, tc, color) {
 
   if (isInCheck(color)) return false;
 
-  const homeRank = (color === 'w') ? 7 : 0;
+  const homeRank = color === 'w' ? 7 : 0;
 
   if (fr === homeRank && fc === 4 && tr === homeRank) {
 
+    // kurze Rochade
     if (tc === 6) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
@@ -438,6 +468,7 @@ function king(fr, fc, tr, tc, color) {
       return true;
     }
 
+    // lange Rochade
     if (tc === 2) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
