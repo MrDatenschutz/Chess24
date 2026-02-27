@@ -265,11 +265,15 @@ function getLegalMovesForPiece(r, c) {
   for (let rr = 0; rr < 8; rr++) {
     for (let cc = 0; cc < 8; cc++) {
       if (isLegalMove(r, c, rr, cc, piece)) {
-        const backup = JSON.parse(JSON.stringify(board));
+        const backupBoard = JSON.parse(JSON.stringify(board));
+        const backupMoved = JSON.parse(JSON.stringify(moved));
+
         board[rr][cc] = piece;
         board[r][c] = null;
         const safe = !isInCheck(piece[0]);
-        board = backup;
+
+        board = backupBoard;
+        moved = backupMoved;
 
         if (safe) moves.push([rr, cc]);
       }
@@ -415,19 +419,29 @@ function knight(dr, dc) {
 }
 
 function king(fr, fc, tr, tc, color) {
-  if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) return true;
+  const enemy = color === 'w' ? 'b' : 'w';
+
+  // normale Königszüge
+  if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) {
+    return true;
+  }
+
+  // Rochade nur, wenn König nicht im Schach steht
+  if (isInCheck(color)) return false;
 
   const homeRank = (color === 'w') ? 7 : 0;
-  const enemy = color === 'w' ? 'b' : 'w';
 
   if (fr === homeRank && fc === 4 && tr === homeRank) {
 
+    // kurze Rochade
     if (tc === 6) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
 
       if (color === 'w' && moved.wR7) return false;
       if (color === 'b' && moved.bR7) return false;
+
+      if (board[homeRank][7] !== color + 'R') return false;
 
       if (!board[homeRank][5] && !board[homeRank][6] &&
           !isSquareAttacked(homeRank, 4, enemy) &&
@@ -437,12 +451,15 @@ function king(fr, fc, tr, tc, color) {
       }
     }
 
+    // lange Rochade
     if (tc === 2) {
       if (color === 'w' && moved.wK) return false;
       if (color === 'b' && moved.bK) return false;
 
       if (color === 'w' && moved.wR0) return false;
       if (color === 'b' && moved.bR0) return false;
+
+      if (board[homeRank][0] !== color + 'R') return false;
 
       if (!board[homeRank][1] && !board[homeRank][2] && !board[homeRank][3] &&
           !isSquareAttacked(homeRank, 4, enemy) &&
