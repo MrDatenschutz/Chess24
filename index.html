@@ -13,43 +13,18 @@
       align-items: center;
       padding: 2rem;
     }
-
-    h1 {
-      color: #58a6ff;
-      margin-bottom: 1rem;
-    }
-
+    h1 { color: #58a6ff; margin-bottom: 1rem; }
     #leftPanel {
-      position: absolute;
-      left: 20px;
-      top: 20px;
-      color: #e6edf3;
-      font-size: 1.2rem;
-      line-height: 1.8rem;
+      position: absolute; left: 20px; top: 20px;
+      color: #e6edf3; font-size: 1.2rem; line-height: 1.8rem;
     }
-
-    #colorSelect {
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-
+    #colorSelect { margin-bottom: 1.5rem; text-align: center; }
     button {
-      background: #238636;
-      border: none;
-      padding: 0.6rem 1.2rem;
-      border-radius: 6px;
-      color: white;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: 0.2s;
-      margin: 0.3rem;
+      background: #238636; border: none; padding: 0.6rem 1.2rem;
+      border-radius: 6px; color: white; cursor: pointer;
+      font-size: 1rem; transition: 0.2s; margin: 0.3rem;
     }
-
-    button:hover {
-      background: #2ea043;
-      box-shadow: 0 0 10px #2ea04388;
-    }
-
+    button:hover { background: #2ea043; box-shadow: 0 0 10px #2ea04388; }
     #board {
       display: grid;
       grid-template-columns: repeat(8, 64px);
@@ -59,55 +34,26 @@
       margin-top: 1rem;
       transform-origin: center;
     }
-
     .square {
-      width: 64px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
-      cursor: pointer;
-      user-select: none;
+      width: 64px; height: 64px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; cursor: pointer; user-select: none;
     }
-
     .light { background: #ffeb3b; }
     .dark  { background: #1565c0; }
-
-    .highlight {
-      box-shadow: inset 0 0 0 4px #2ea043;
-    }
-
-    .check-king {
-      box-shadow: inset 0 0 15px 5px rgba(255, 0, 0, 0.7);
-    }
-
-    #status {
-      margin-top: 1rem;
-      font-size: 1.2rem;
-    }
-
+    .highlight { box-shadow: inset 0 0 0 4px #2ea043; }
+    .check-king { box-shadow: inset 0 0 15px 5px rgba(255,0,0,0.7); }
+    #status { margin-top: 1rem; font-size: 1.2rem; }
     #promotionBox {
-      position: fixed;
-      top: 50%;
-      left: 50%;
+      position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: #161b22;
-      padding: 20px;
-      border: 2px solid #30363d;
-      display: none;
-      text-align: center;
+      background: #161b22; padding: 20px;
+      border: 2px solid #30363d; display: none; text-align: center;
     }
-
-    #promotionBox button {
-      font-size: 30px;
-      margin: 10px;
-    }
+    #promotionBox button { font-size: 30px; margin: 10px; }
   </style>
 </head>
-
 <body>
-
   <div id="leftPanel">
     <div><b>Deine Zeit:</b> <span id="playerTime">5:00</span></div>
     <div><b>Bot Zeit:</b> <span id="botTime">5:00</span></div>
