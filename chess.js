@@ -6,6 +6,7 @@ let selectedSquare = null;
 let playerColor = 'w';
 let botColor = 'b';
 let currentTurn = 'w';
+let flipped = false;
 
 const PIECES = {
   'wP': '♙','wR': '♖','wN': '♘','wB': '♗','wQ': '♕','wK': '♔',
@@ -16,6 +17,10 @@ function startGame(color) {
   playerColor = color;
   botColor = color === 'w' ? 'b' : 'w';
   currentTurn = 'w';
+
+  flipped = (playerColor === 'b');
+  boardEl.style.transform = flipped ? "rotate(180deg)" : "none";
+
   initBoard();
   renderBoard();
   updateStatus();
@@ -38,21 +43,26 @@ function initBoard() {
 
 function renderBoard() {
   boardEl.innerHTML = '';
+
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const sq = document.createElement('div');
       sq.classList.add('square');
       sq.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
-      sq.dataset.row = r;
-      sq.dataset.col = c;
 
-      const piece = board[r][c];
+      const rr = flipped ? 7 - r : r;
+      const cc = flipped ? 7 - c : c;
+
+      sq.dataset.row = rr;
+      sq.dataset.col = cc;
+
+      const piece = board[rr][cc];
       if (piece) {
         sq.textContent = PIECES[piece];
         sq.style.color = piece[0] === 'w' ? '#ffffff' : '#000000';
       }
 
-      sq.onclick = () => onSquareClick(r, c);
+      sq.onclick = () => onSquareClick(rr, cc);
       boardEl.appendChild(sq);
     }
   }
@@ -66,6 +76,7 @@ function onSquareClick(r, c) {
   if (currentTurn !== playerColor) return;
 
   const piece = board[r][c];
+
   if (selectedSquare) {
     const [sr, sc] = selectedSquare;
     const movingPiece = board[sr][sc];
