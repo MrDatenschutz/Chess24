@@ -18,6 +18,8 @@ let playerTime = 300;
 let botTime = 300;
 let timerInterval = null;
 
+let promotionCallback = null;
+
 const PIECES = {
   'wP': '♙','wR': '♖','wN': '♘','wB': '♗','wQ': '♕','wK': '♔',
   'bP': '♟','bR': '♜','bN': '♞','bB': '♝','bQ': '♛','bK': '♚'
@@ -118,7 +120,6 @@ function updateStatus() {
     statusEl.textContent = currentTurn === playerColor ? "Du bist am Zug" : "Bot denkt...";
   }
 }
-
 function onSquareClick(r, c) {
   if (currentTurn !== playerColor) return;
 
@@ -126,7 +127,6 @@ function onSquareClick(r, c) {
 
   if (selectedSquare) {
     const [sr, sc] = selectedSquare;
-    const movingPiece = board[sr][sc];
 
     if (legalMoves.some(m => m[0] === r && m[1] === c)) {
       makeMove(sr, sc, r, c);
@@ -151,8 +151,25 @@ function makeMove(fr, fc, tr, tc) {
 
   if (target) updateScore(piece[0], target);
 
+  if (piece[1] === 'K' && Math.abs(tc - fc) === 2) {
+    if (tc === fc + 2) {
+      board[fr][fc + 1] = board[fr][7];
+      board[fr][7] = null;
+    } else {
+      board[fr][fc - 1] = board[fr][0];
+      board[fr][0] = null;
+    }
+  }
+
   board[tr][tc] = piece;
   board[fr][fc] = null;
+
+  if (piece[1] === 'P') {
+    if ((piece[0] === 'w' && tr === 0) || (piece[0] === 'b' && tr === 7)) {
+      showPromotionBox(piece[0], tr, tc);
+      return;
+    }
+  }
 
   selectedSquare = null;
   legalMoves = [];
@@ -162,6 +179,26 @@ function makeMove(fr, fc, tr, tc) {
   updateStatus();
 
   setTimeout(botMove, 200);
+}
+
+function showPromotionBox(color, r, c) {
+  const box = document.getElementById('promotionBox');
+  box.style.display = 'block';
+
+  promotionCallback = (pieceType) => {
+    board[r][c] = color + pieceType;
+    box.style.display = 'none';
+    promotionCallback = null;
+
+    currentTurn = botColor;
+    renderBoard();
+    updateStatus();
+    setTimeout(botMove, 200);
+  };
+}
+
+function promote(type) {
+  if (promotionCallback) promotionCallback(type);
 }
 
 function updateScore(color, captured) {
@@ -175,9 +212,22 @@ function updateScore(color, captured) {
 
 function botMove() {
   const moves = getAllLegalMoves(botColor);
-  if (moves.length === 0) return;
 
-  const move = moves[Math.floor(Math.random() * moves.length)];
+  const safeMoves = moves.filter(m => {
+    const [fr, fc, tr, tc] = m;
+    const backup = JSON.parse(JSON.stringify(board));
+    board[tr][tc] = board[fr][fc];
+    board[fr][fc] = null;
+    const safe = !isInCheck(botColor);
+    board = backup;
+    return safe;
+  });
+
+  const finalMoves = safeMoves.length > 0 ? safeMoves : moves;
+
+  if (finalMoves.length === 0) return;
+
+  const move = finalMoves[Math.floor(Math.random() * finalMoves.length)];
   const [fr, fc, tr, tc] = move;
 
   const target = board[tr][tc];
@@ -185,6 +235,12 @@ function botMove() {
 
   board[tr][tc] = board[fr][fc];
   board[fr][fc] = null;
+
+  if (board[tr][tc][1] === 'P') {
+    if ((botColor === 'w' && tr === 0) || (botColor === 'b' && tr === 7)) {
+      board[tr][tc] = botColor + 'Q';
+    }
+  }
 
   currentTurn = playerColor;
   renderBoard();
@@ -199,7 +255,13 @@ function getLegalMovesForPiece(r, c) {
   for (let rr = 0; rr < 8; rr++) {
     for (let cc = 0; cc < 8; cc++) {
       if (isLegalMove(r, c, rr, cc, piece)) {
-        moves.push([rr, cc]);
+        const backup = JSON.parse(JSON.stringify(board));
+        board[rr][cc] = piece;
+        board[r][c] = null;
+        const safe = !isInCheck(piece[0]);
+        board = backup;
+
+        if (safe) moves.push([rr, cc]);
       }
     }
   }
@@ -234,7 +296,6 @@ function isInCheck(color) {
 
   return moves.some(m => m[2] === kingPos[0] && m[3] === kingPos[1]);
 }
-
 function isLegalMove(fr, fc, tr, tc, piece) {
   if (!piece) return false;
   const color = piece[0];
@@ -298,6 +359,16 @@ function knight(dr, dc) {
 
 function king(fr, fc, tr, tc, color) {
   if (Math.max(Math.abs(tr - fr), Math.abs(tc - fc)) === 1) return true;
+
+  if (fr === (color === 'w' ? 7 : 0) && fc === 4) {
+    if (tc === 6 && tr === fr) {
+      if (!board[fr][5] && !board[fr][6]) return true;
+    }
+    if (tc === 2 && tr === fr) {
+      if (!board[fr][1] && !board[fr][2] && !board[fr][3]) return true;
+    }
+  }
+
   return false;
 }
 
